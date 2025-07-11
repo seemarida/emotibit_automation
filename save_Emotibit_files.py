@@ -1,4 +1,3 @@
-#!!
 import os
 import shutil
 import subprocess
@@ -114,15 +113,25 @@ class EmotiBitProcessor:
             
             for csv_file in renamed_csv_files:
                 try:
+                    print(f"Running parser command: {self.emotibit_parser_path} {csv_file} -o {output_folder}")
+                    
                     # Run EmotiBit DataParser
                     # Adjust command based on your EmotiBit DataParser requirements
                     cmd = [self.emotibit_parser_path, csv_file, "-o", output_folder]
-                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+                    
+                    print(f"Parser output: {result.stdout}")
+                    if result.stderr:
+                        print(f"Parser errors: {result.stderr}")
                     
                     if result.returncode == 0:
                         print(f"Successfully parsed {os.path.basename(csv_file)}")
+                        # List files in output folder to verify
+                        if os.path.exists(output_folder):
+                            files_created = os.listdir(output_folder)
+                            print(f"Files in {os.path.basename(output_folder)}: {files_created}")
                     else:
-                        print(f"Error parsing {os.path.basename(csv_file)}: {result.stderr}")
+                        print(f"Parser returned error code {result.returncode} for {os.path.basename(csv_file)}")
                         
                 except Exception as e:
                     print(f"Error running parser on {csv_file}: {str(e)}")
@@ -195,7 +204,7 @@ def get_user_input():
             print("Please enter a valid number.")
     
     # Use default path for EmotiBit DataParser executable
-    parser_path = r"C:\Program Files\EmotiBit\EmotiBit DataParser\EmotiBitDataParser.exe"  # UPDATE THIS DEFAULT PATH
+    parser_path = r"C:\path\to\emotibit\dataparser.exe"  # UPDATE THIS DEFAULT PATH
     
     # Directory containing your raw files
     source_dir = input("Enter source directory for raw files (or press Enter for current directory): ").strip()
