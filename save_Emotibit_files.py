@@ -80,8 +80,8 @@ class EmotiBitProcessor:
         
         return raw_1_files, raw_2_files
     
-    def create_renamed_csv_for_parsing(self, raw_files, temp_dir):
-        """Create renamed CSV files for parsing (without RAW_# in filename)"""
+    def create_renamed_csv_for_parsing(self, raw_files, output_folder):
+        """Create renamed CSV files for parsing (without RAW_# in filename) directly in output folder"""
         renamed_csv_files = []
         
         for file_path in raw_files:
@@ -91,56 +91,45 @@ class EmotiBitProcessor:
                 # Remove RAW_1 or RAW_2 from filename
                 new_filename = original_filename.replace('_RAW_1', '').replace('_RAW_2', '')
                 
-                # Create renamed file in temp directory
-                temp_file_path = os.path.join(temp_dir, new_filename)
-                shutil.copy2(file_path, temp_file_path)
-                renamed_csv_files.append(temp_file_path)
-                print(f"Created renamed file for parsing: {new_filename}")
+                # Create renamed file directly in output folder
+                renamed_file_path = os.path.join(output_folder, new_filename)
+                shutil.copy2(file_path, renamed_file_path)
+                renamed_csv_files.append(renamed_file_path)
+                print(f"Created renamed file for parsing: {new_filename} in {os.path.basename(output_folder)}")
         
         return renamed_csv_files
     
     def run_emotibit_parser(self, raw_files, output_folder):
-        """Run EmotiBit DataParser on renamed CSV files"""
-        print(f"Running EmotiBit DataParser on files for {os.path.basename(output_folder)}")
+        """Run EmotiBit DataParser on renamed CSV files and save directly to output folder"""
+        print(f"Processing files for {os.path.basename(output_folder)}")
         
-        # Create temporary directory for renamed files
-        temp_dir = os.path.join(os.path.dirname(output_folder), "temp_parsing")
-        os.makedirs(temp_dir, exist_ok=True)
+        # Create renamed CSV files directly in the output folder
+        renamed_csv_files = self.create_renamed_csv_for_parsing(raw_files, output_folder)
         
-        try:
-            # Create renamed CSV files for parsing
-            renamed_csv_files = self.create_renamed_csv_for_parsing(raw_files, temp_dir)
-            
-            for csv_file in renamed_csv_files:
-                try:
-                    print(f"Running parser command: {self.emotibit_parser_path} {csv_file} -o {output_folder}")
+        for csv_file in renamed_csv_files:
+            try:
+                print(f"Running parser command: {self.emotibit_parser_path} {csv_file} -o {output_folder}")
+                
+                # Run EmotiBit DataParser
+                cmd = [self.emotibit_parser_path, csv_file, "-o", output_folder]
+                result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+                
+                print(f"Parser output: {result.stdout}")
+                if result.stderr:
+                    print(f"Parser errors: {result.stderr}")
+                
+                if result.returncode == 0:
+                    print(f"Successfully parsed {os.path.basename(csv_file)}")
+                else:
+                    print(f"Parser returned error code {result.returncode} for {os.path.basename(csv_file)}")
                     
-                    # Run EmotiBit DataParser
-                    # Adjust command based on your EmotiBit DataParser requirements
-                    cmd = [self.emotibit_parser_path, csv_file, "-o", output_folder]
-                    result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-                    
-                    print(f"Parser output: {result.stdout}")
-                    if result.stderr:
-                        print(f"Parser errors: {result.stderr}")
-                    
-                    if result.returncode == 0:
-                        print(f"Successfully parsed {os.path.basename(csv_file)}")
-                        # List files in output folder to verify
-                        if os.path.exists(output_folder):
-                            files_created = os.listdir(output_folder)
-                            print(f"Files in {os.path.basename(output_folder)}: {files_created}")
-                    else:
-                        print(f"Parser returned error code {result.returncode} for {os.path.basename(csv_file)}")
-                        
-                except Exception as e:
-                    print(f"Error running parser on {csv_file}: {str(e)}")
+            except Exception as e:
+                print(f"Error running parser on {csv_file}: {str(e)}")
         
-        finally:
-            # Clean up temporary directory
-            if os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir)
-                print(f"Cleaned up temporary files")
+        # List all files in output folder
+        if os.path.exists(output_folder):
+            files_in_folder = os.listdir(output_folder)
+            print(f"Files in {os.path.basename(output_folder)}: {files_in_folder}")
     
     def process_all_files(self):
         """Main processing function"""
