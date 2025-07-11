@@ -6,7 +6,7 @@ import glob
 
 class EmotiBitProcessor:
     def __init__(self, emotibit_num, participant_num, week_num, day_num, 
-                 emotibit_parser_path, source_directory="."):
+                 emotibit_parser_path, source_directory=".", output_directory="."):
         """
         Initialize the EmotiBit processor
         
@@ -17,6 +17,7 @@ class EmotiBitProcessor:
             day_num (int): Day number
             emotibit_parser_path (str): Path to EmotiBit DataParser executable
             source_directory (str): Directory containing the raw files
+            output_directory (str): Directory where all output will be saved
         """
         self.emotibit_num = emotibit_num
         self.participant_num = participant_num
@@ -24,10 +25,11 @@ class EmotiBitProcessor:
         self.day_num = day_num
         self.emotibit_parser_path = emotibit_parser_path
         self.source_directory = source_directory
+        self.output_directory = output_directory
         self.today_date = datetime.now().strftime("%m%d%Y")
         
         # Create folder structure names
-        self.main_folder = f"Emotibits_W{week_num}D{day_num}_{self.today_date}"
+        self.main_folder = os.path.join(output_directory, f"Emotibits_W{week_num}D{day_num}_{self.today_date}")
         self.raw_folder_1 = f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_RAW_1"
         self.raw_folder_2 = f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_RAW_2"
         self.parsed_folder_1 = f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_PARSED_1"
@@ -171,14 +173,19 @@ def get_user_input():
             print("Please enter a valid number.")
     
     # Use default path for EmotiBit DataParser executable
-    parser_path = "C:\Users\Public\Desktop\EmotiBit DataParser.lnk"  # UPDATE THIS DEFAULT PATH
+    parser_path = r"C:\path\to\emotibit\dataparser.exe"  # UPDATE THIS DEFAULT PATH
     
     # Directory containing your raw files
     source_dir = input("Enter source directory for raw files (or press Enter for current directory): ").strip()
     if not source_dir:
         source_dir = "."
     
-    return emotibit_num, participant_num, week_num, day_num, parser_path, source_dir
+    # Output directory where everything will be saved
+    output_dir = input("Enter output directory where you want everything saved (or press Enter for current directory): ").strip()
+    if not output_dir:
+        output_dir = "."
+    
+    return emotibit_num, participant_num, week_num, day_num, parser_path, source_dir, output_dir
 
 
 def main():
@@ -186,7 +193,7 @@ def main():
     Main function - Gets configuration from user input
     """
     # Get configuration from user
-    emotibit_num, participant_num, week_num, day_num, parser_path, source_dir = get_user_input()
+    emotibit_num, participant_num, week_num, day_num, parser_path, source_dir, output_dir = get_user_input()
     
     # Display configuration
     print("\n" + "=" * 40)
@@ -197,6 +204,7 @@ def main():
     print(f"Day Number: {day_num}")
     print(f"Parser Path: {parser_path}")
     print(f"Source Directory: {source_dir}")
+    print(f"Output Directory: {output_dir}")
     print("=" * 40)
     
     # Confirm before proceeding
@@ -212,7 +220,8 @@ def main():
         week_num=week_num,
         day_num=day_num,
         emotibit_parser_path=parser_path,
-        source_directory=source_dir
+        source_directory=source_dir,
+        output_directory=output_dir
     )
     
     # Process all files
