@@ -1,4 +1,4 @@
-#new
+#!
 import os
 import shutil
 import subprocess
@@ -81,27 +81,57 @@ class EmotiBitProcessor:
         
         return raw_1_files, raw_2_files
     
-    def run_emotibit_parser(self, raw_files, output_folder):
-        """Run EmotiBit DataParser on raw files"""
-        print(f"Running EmotiBit DataParser on files in {os.path.basename(output_folder)}")
+    def create_renamed_csv_for_parsing(self, raw_files, temp_dir):
+        """Create renamed CSV files for parsing (without RAW_# in filename)"""
+        renamed_csv_files = []
         
-        # Find CSV files to process
-        csv_files = [f for f in raw_files if f.endswith('.csv')]
-        
-        for csv_file in csv_files:
-            try:
-                # Run EmotiBit DataParser
-                # Adjust command based on your EmotiBit DataParser requirements
-                cmd = [self.emotibit_parser_path, csv_file, "-o", output_folder]
-                result = subprocess.run(cmd, capture_output=True, text=True)
+        for file_path in raw_files:
+            if file_path.endswith('.csv'):
+                original_filename = os.path.basename(file_path)
                 
-                if result.returncode == 0:
-                    print(f"Successfully parsed {os.path.basename(csv_file)}")
-                else:
-                    print(f"Error parsing {os.path.basename(csv_file)}: {result.stderr}")
+                # Remove RAW_1 or RAW_2 from filename
+                new_filename = original_filename.replace('_RAW_1', '').replace('_RAW_2', '')
+                
+                # Create renamed file in temp directory
+                temp_file_path = os.path.join(temp_dir, new_filename)
+                shutil.copy2(file_path, temp_file_path)
+                renamed_csv_files.append(temp_file_path)
+                print(f"Created renamed file for parsing: {new_filename}")
+        
+        return renamed_csv_files
+    
+    def run_emotibit_parser(self, raw_files, output_folder):
+        """Run EmotiBit DataParser on renamed CSV files"""
+        print(f"Running EmotiBit DataParser on files for {os.path.basename(output_folder)}")
+        
+        # Create temporary directory for renamed files
+        temp_dir = os.path.join(os.path.dirname(output_folder), "temp_parsing")
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        try:
+            # Create renamed CSV files for parsing
+            renamed_csv_files = self.create_renamed_csv_for_parsing(raw_files, temp_dir)
+            
+            for csv_file in renamed_csv_files:
+                try:
+                    # Run EmotiBit DataParser
+                    # Adjust command based on your EmotiBit DataParser requirements
+                    cmd = [self.emotibit_parser_path, csv_file, "-o", output_folder]
+                    result = subprocess.run(cmd, capture_output=True, text=True)
                     
-            except Exception as e:
-                print(f"Error running parser on {csv_file}: {str(e)}")
+                    if result.returncode == 0:
+                        print(f"Successfully parsed {os.path.basename(csv_file)}")
+                    else:
+                        print(f"Error parsing {os.path.basename(csv_file)}: {result.stderr}")
+                        
+                except Exception as e:
+                    print(f"Error running parser on {csv_file}: {str(e)}")
+        
+        finally:
+            # Clean up temporary directory
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+                print(f"Cleaned up temporary files")
     
     def process_all_files(self):
         """Main processing function"""
@@ -165,7 +195,7 @@ def get_user_input():
             print("Please enter a valid number.")
     
     # Use default path for EmotiBit DataParser executable
-    parser_path = r"C:\Users\Public\Desktop\Emotibit DataParser.lnk"  # UPDATE THIS DEFAULT PATH
+    parser_path = r"C:\Program Files\EmotiBit\EmotiBit DataParser\EmotiBitDataParser.exe"  # UPDATE THIS DEFAULT PATH
     
     # Directory containing your raw files
     source_dir = input("Enter source directory for raw files (or press Enter for current directory): ").strip()
