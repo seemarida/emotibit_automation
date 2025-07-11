@@ -28,34 +28,25 @@ class EmotiBitProcessor:
         self.output_directory = output_directory
         self.today_date = datetime.now().strftime("%m%d%Y")
         
-        # Create folder structure names
-        self.main_folder = os.path.join(output_directory, f"Emotibits_W{week_num}D{day_num}_{self.today_date}")
-        self.raw_folder_1 = f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_RAW_1"
-        self.raw_folder_2 = f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_RAW_2"
-        self.parsed_folder_1 = f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_PARSED_1"
-        self.parsed_folder_2 = f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_PARSED_2"
+        # Create folder structure names (directly in output directory)
+        self.raw_folder_1 = os.path.join(output_directory, f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_RAW_1")
+        self.raw_folder_2 = os.path.join(output_directory, f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_RAW_2")
+        self.parsed_folder_1 = os.path.join(output_directory, f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_PARSED_1")
+        self.parsed_folder_2 = os.path.join(output_directory, f"E{emotibit_num}P{participant_num}_W{week_num}D{day_num}_{self.today_date}_PARSED_2")
     
     def create_folder_structure(self):
-        """Create the main folder and subfolders"""
-        # Create main folder
-        os.makedirs(self.main_folder, exist_ok=True)
-        print(f"Created main folder: {self.main_folder}")
-        
+        """Create the raw and parsed folders directly in output directory"""
         # Create raw data folders
-        raw_1_path = os.path.join(self.main_folder, self.raw_folder_1)
-        raw_2_path = os.path.join(self.main_folder, self.raw_folder_2)
-        os.makedirs(raw_1_path, exist_ok=True)
-        os.makedirs(raw_2_path, exist_ok=True)
-        print(f"Created raw folders: {self.raw_folder_1} and {self.raw_folder_2}")
+        os.makedirs(self.raw_folder_1, exist_ok=True)
+        os.makedirs(self.raw_folder_2, exist_ok=True)
+        print(f"Created raw folders: {os.path.basename(self.raw_folder_1)} and {os.path.basename(self.raw_folder_2)}")
         
         # Create parsed data folders
-        parsed_1_path = os.path.join(self.main_folder, self.parsed_folder_1)
-        parsed_2_path = os.path.join(self.main_folder, self.parsed_folder_2)
-        os.makedirs(parsed_1_path, exist_ok=True)
-        os.makedirs(parsed_2_path, exist_ok=True)
-        print(f"Created parsed folders: {self.parsed_folder_1} and {self.parsed_folder_2}")
+        os.makedirs(self.parsed_folder_1, exist_ok=True)
+        os.makedirs(self.parsed_folder_2, exist_ok=True)
+        print(f"Created parsed folders: {os.path.basename(self.parsed_folder_1)} and {os.path.basename(self.parsed_folder_2)}")
         
-        return raw_1_path, raw_2_path, parsed_1_path, parsed_2_path
+        return self.raw_folder_1, self.raw_folder_2, self.parsed_folder_1, self.parsed_folder_2
     
     def find_and_move_raw_files(self, raw_1_path, raw_2_path):
         """Find and move raw files to appropriate folders"""
@@ -75,7 +66,7 @@ class EmotiBitProcessor:
                 dest_path = os.path.join(raw_1_path, filename)
                 shutil.copy2(file_path, dest_path)
                 raw_1_files.append(dest_path)
-                print(f"Moved {filename} to {self.raw_folder_1}")
+                print(f"Moved {filename} to {os.path.basename(raw_1_path)}")
         
         # Move RAW_2 files
         raw_2_files = []
@@ -85,7 +76,7 @@ class EmotiBitProcessor:
                 dest_path = os.path.join(raw_2_path, filename)
                 shutil.copy2(file_path, dest_path)
                 raw_2_files.append(dest_path)
-                print(f"Moved {filename} to {self.raw_folder_2}")
+                print(f"Moved {filename} to {os.path.basename(raw_2_path)}")
         
         return raw_1_files, raw_2_files
     
@@ -136,7 +127,7 @@ class EmotiBitProcessor:
             print("No RAW_2 files found!")
         
         print("Processing complete!")
-        return self.main_folder
+        return self.output_directory
 
 
 def get_user_input():
@@ -173,7 +164,7 @@ def get_user_input():
             print("Please enter a valid number.")
     
     # Use default path for EmotiBit DataParser executable
-    parser_path = r"C:\path\to\emotibit\dataparser.exe"  # UPDATE THIS DEFAULT PATH
+    parser_path = r"C:\Users\Public\Desktop\Emotibit DataParser.lnk"  # UPDATE THIS DEFAULT PATH
     
     # Directory containing your raw files
     source_dir = input("Enter source directory for raw files (or press Enter for current directory): ").strip()
