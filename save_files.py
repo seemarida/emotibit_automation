@@ -1,3 +1,4 @@
+#new.
 import os
 import shutil
 import subprocess
@@ -19,10 +20,10 @@ def find_raw_files(source_dir):
     json_files = sorted([f for f in os.listdir(source_dir) if re.match(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}_info\.json', f)])
     return csv_files[:2], json_files[:2]
 
-def setup_folders(output_dir, week_num, day_num):
+def setup_folders(output_dir):
     """Create Raw and Parsed folders if they don't exist"""
-    raw_folder = os.path.join(output_dir, f"W{week_num}", f"D{day_num}", "Raw")
-    parsed_folder = os.path.join(output_dir, f"W{week_num}", f"D{day_num}", "Parsed")
+    raw_folder = os.path.join(output_dir, "Raw")
+    parsed_folder = os.path.join(output_dir, "Parsed")
     os.makedirs(raw_folder, exist_ok=True)
     os.makedirs(parsed_folder, exist_ok=True)
     return raw_folder, parsed_folder
@@ -48,7 +49,11 @@ def run_parser(parser_exe_path, csv_file_path):
     """Run EmotiBit DataParser.exe on a CSV file"""
     csv_dir = os.path.dirname(csv_file_path)
     csv_filename = os.path.basename(csv_file_path)
-    subprocess.run([parser_exe_path, csv_filename], cwd=csv_dir)
+    print(f"Running parser on: {csv_filename}")
+    result = subprocess.run([parser_exe_path, csv_filename], cwd=csv_dir, capture_output=True, text=True)
+    print(f"Parser output: {result.stdout}")
+    if result.stderr:
+        print(f"Parser errors: {result.stderr}")
 
 def organize_parsed_files(raw_folder, parsed_folder, rec_name):
     """Move parsed datastream files to Parsed/rec_name/ subfolder"""
@@ -78,7 +83,7 @@ def main():
     
     # Find raw files and setup folders
     csv_files, json_files = find_raw_files(source_dir)
-    raw_folder, parsed_folder = setup_folders(output_dir, week_num, day_num)
+    raw_folder, parsed_folder = setup_folders(output_dir)
     
     # Process files: rename, move, parse, organize
     moved_files = rename_and_move_files(source_dir, raw_folder, csv_files, json_files, 
