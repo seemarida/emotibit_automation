@@ -158,9 +158,9 @@ def organize_parsed_files(recording_folder, raw_folder, expected_csv_name):
                     moved_files.append(file)
    
     if moved_files:
-        print(f"✓ Found/moved {len(moved_files)} parsed datastream files: {moved_files}")
+        print(f"Found/moved {len(moved_files)} parsed datastream files: {moved_files}")
     else:
-        print("⚠ No parsed datastream files found")
+        print("No parsed datastream files found")
        
         # Debug: List all files in raw folder to see what the parser actually created
         print("DEBUG: All files in Raw folder after parsing:")
@@ -230,11 +230,11 @@ def main():
             # Move parsed files from Raw folder to recording folder
             moved_files = organize_parsed_files(recording_folder, raw_folder, original_csv_name)
             if moved_files:
-                print(f"✓ Successfully processed {original_csv_name} - moved {len(moved_files)} parsed files")
+                print(f"Successfully processed {original_csv_name} - moved {len(moved_files)} parsed files")
             else:
-                print(f"✓ Parser ran successfully for {original_csv_name}, but no parsed files found to move")
+                print(f"Parser ran successfully for {original_csv_name}, but no parsed files found to move")
         else:
-            print(f"✗ Failed to process {original_csv_name}")
+            print(f"Failed to process {original_csv_name}")
    
     print(f"\n{'='*50}")
     print("SUMMARY:")
