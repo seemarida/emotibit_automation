@@ -1,4 +1,4 @@
-#new.
+#shoudl work
 import os
 import shutil
 import subprocess
@@ -45,15 +45,23 @@ def rename_and_move_files(source_dir, raw_folder, csv_files, json_files, partici
     
     return moved_files
 
-def run_parser(parser_exe_path, csv_file_path):
-    """Run EmotiBit DataParser.exe on a CSV file"""
-    csv_dir = os.path.dirname(csv_file_path)
+def run_parser(parser_exe_path, csv_file_path, output_folder):
+    """Run EmotiBit DataParser.exe on a CSV file with output directory"""
     csv_filename = os.path.basename(csv_file_path)
     print(f"Running parser on: {csv_filename}")
-    result = subprocess.run([parser_exe_path, csv_filename], cwd=csv_dir, capture_output=True, text=True)
+    
+    # Use the command format from your working code
+    cmd = [parser_exe_path, csv_file_path, "-o", output_folder]
+    result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+    
     print(f"Parser output: {result.stdout}")
     if result.stderr:
         print(f"Parser errors: {result.stderr}")
+    
+    if result.returncode == 0:
+        print(f"Successfully parsed {csv_filename}")
+    else:
+        print(f"Parser returned error code {result.returncode}")
 
 def organize_parsed_files(raw_folder, parsed_folder, rec_name):
     """Move parsed datastream files to Parsed/rec_name/ subfolder"""
@@ -90,8 +98,12 @@ def main():
                                       participant_num, emotibit_num, week_num, day_num)
     
     for csv_path, rec_name in moved_files:
-        run_parser(parser_exe_path, csv_path)
-        organize_parsed_files(raw_folder, parsed_folder, rec_name)
+        # Create subfolder for this recording's parsed files
+        rec_parsed_folder = os.path.join(parsed_folder, rec_name)
+        os.makedirs(rec_parsed_folder, exist_ok=True)
+        
+        # Run parser with output going directly to the subfolder
+        run_parser(parser_exe_path, csv_path, rec_parsed_folder)
 
 if __name__ == "__main__":
     main()
