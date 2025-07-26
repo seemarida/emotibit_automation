@@ -3,49 +3,42 @@ import shutil
 import subprocess
 import glob
 import re
-
-def find_week_day_numbers(base_path):
-    """Extract week number from largest W# folder and day number from D# folders within it"""
-    week_folders = glob.glob(os.path.join(base_path, "W*"))
-    week_numbers = [(int(re.search(r'W(\d+)', os.path.basename(f)).group(1)), f) for f in week_folders]
-    largest_week_num, largest_week_folder = max(week_numbers)
-    
-    day_folders = glob.glob(os.path.join(largest_week_folder, "D*"))
-    day_numbers = [int(re.search(r'D(\d+)', os.path.basename(f)).group(1)) for f in day_folders]
-    
-    return largest_week_num, max(day_numbers)
+from datetime import datetime
 
 def get_user_input():
-    """Get P#, E#, and ISO number from user"""
+    """Get P#, E#, W#, D# from user"""
     participant_num = int(input("Enter participant number (P#): "))
     emotibit_num = int(input("Enter emotibit number (E#): "))
-    iso_number = input("Enter ISO number: ")
-    return participant_num, emotibit_num, iso_number
+    week_num = int(input("Enter week number (W#): "))
+    day_num = int(input("Enter day number (D#): "))
+    return participant_num, emotibit_num, week_num, day_num
 
-def find_raw_files(microsd_path):
+def find_raw_files(source_dir):
     """Find first 2 CSV and JSON files sorted by timestamp"""
-    csv_files = sorted([f for f in os.listdir(microsd_path) if re.match(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}\.csv', f)])
-    json_files = sorted([f for f in os.listdir(microsd_path) if re.match(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}_info\.json', f)])
+    csv_files = sorted([f for f in os.listdir(source_dir) if re.match(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}\.csv', f)])
+    json_files = sorted([f for f in os.listdir(source_dir) if re.match(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{3}_info\.json', f)])
     return csv_files[:2], json_files[:2]
 
-def setup_folders(base_path, week_num, day_num):
+def setup_folders(output_dir, week_num, day_num):
     """Create Raw and Parsed folders if they don't exist"""
-    raw_folder = os.path.join(base_path, f"W{week_num}", f"D{day_num}", "Raw")
-    parsed_folder = os.path.join(base_path, f"W{week_num}", f"D{day_num}", "Parsed")
+    raw_folder = os.path.join(output_dir, f"W{week_num}", f"D{day_num}", "Raw")
+    parsed_folder = os.path.join(output_dir, f"W{week_num}", f"D{day_num}", "Parsed")
     os.makedirs(raw_folder, exist_ok=True)
     os.makedirs(parsed_folder, exist_ok=True)
     return raw_folder, parsed_folder
 
-def rename_and_move_files(microsd_path, raw_folder, csv_files, json_files, participant_num, emotibit_num, week_num, day_num, iso_number):
+def rename_and_move_files(source_dir, raw_folder, csv_files, json_files, participant_num, emotibit_num, week_num, day_num):
     """Rename files to P#E#_W#D#_REC#-2_iso format and move to Raw folder"""
     moved_files = []
     
     for i, (csv_file, json_file) in enumerate(zip(csv_files, json_files), 1):
-        new_name = f"P{participant_num}E{emotibit_num}_W{week_num}D{day_num}_REC{i}-2_{iso_number}"
+        # Extract date from filename (YYYY-MM-DD format)
+        iso_date = csv_file[:10]  # First 10 characters are YYYY-MM-DD
+        new_name = f"P{participant_num}E{emotibit_num}_W{week_num}D{day_num}_REC{i}-2_{iso_date}"
         
         # Copy and rename CSV and JSON files
-        shutil.copy2(os.path.join(microsd_path, csv_file), os.path.join(raw_folder, f"{new_name}.csv"))
-        shutil.copy2(os.path.join(microsd_path, json_file), os.path.join(raw_folder, f"{new_name}_info.json"))
+        shutil.copy2(os.path.join(source_dir, csv_file), os.path.join(raw_folder, f"{new_name}.csv"))
+        shutil.copy2(os.path.join(source_dir, json_file), os.path.join(raw_folder, f"{new_name}_info.json"))
         
         moved_files.append((os.path.join(raw_folder, f"{new_name}.csv"), new_name))
     
@@ -68,22 +61,28 @@ def organize_parsed_files(raw_folder, parsed_folder, rec_name):
             shutil.move(os.path.join(raw_folder, file), os.path.join(rec_parsed_folder, file))
 
 def main():
-    # Get paths from user
-    microsd_path = input("Enter microSD card path: ").strip()
-    base_path = input("Enter base path (where W# folders are): ").strip()
+    # Directory containing your raw files
+    source_dir = input("Enter source directory for raw files (or press Enter for current directory): ").strip()
+    if not source_dir:
+        source_dir = "."
+    
+    # Output directory where everything will be saved
+    output_dir = input("Enter output directory where you want everything saved (or press Enter for current directory): ").strip()
+    if not output_dir:
+        output_dir = "."
+    
     parser_exe_path = "C:/Path/To/EmotiBit/DataParser.exe"  # Update this path
     
-    # Find week/day numbers and get user input
-    week_num, day_num = find_week_day_numbers(base_path)
-    participant_num, emotibit_num, iso_number = get_user_input()
+    # Get user input for numbers
+    participant_num, emotibit_num, week_num, day_num = get_user_input()
     
     # Find raw files and setup folders
-    csv_files, json_files = find_raw_files(microsd_path)
-    raw_folder, parsed_folder = setup_folders(base_path, week_num, day_num)
+    csv_files, json_files = find_raw_files(source_dir)
+    raw_folder, parsed_folder = setup_folders(output_dir, week_num, day_num)
     
     # Process files: rename, move, parse, organize
-    moved_files = rename_and_move_files(microsd_path, raw_folder, csv_files, json_files, 
-                                      participant_num, emotibit_num, week_num, day_num, iso_number)
+    moved_files = rename_and_move_files(source_dir, raw_folder, csv_files, json_files, 
+                                      participant_num, emotibit_num, week_num, day_num)
     
     for csv_path, rec_name in moved_files:
         run_parser(parser_exe_path, csv_path)
