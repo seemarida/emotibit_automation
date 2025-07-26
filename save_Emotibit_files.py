@@ -1,4 +1,3 @@
-# should work
 import os
 import shutil
 import subprocess
